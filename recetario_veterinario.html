@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Recetario Veterinario IA</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #f5f3ee; --surface: #ffffff; --surface2: #f0ede6;
+      --border: rgba(0,0,0,0.1); --border-strong: rgba(0,0,0,0.18);
+      --text: #1a1917; --text-muted: #6b6760;
+      --accent: #0f4c81; --accent-light: #e8f0f9; --accent-hover: #0a3560;
+      --danger: #8b2020; --danger-light: #fdf0f0;
+      --radius: 10px; --radius-lg: 14px;
+    }
+    body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; padding: 2rem 1rem; }
+    .app { max-width: 720px; margin: 0 auto; }
+
+    .header { text-align: center; margin-bottom: 2rem; }
+    .header-icon { width: 52px; height: 52px; background: var(--accent); border-radius: 16px; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; }
+    .header-icon svg { width: 26px; height: 26px; }
+    .header h1 { font-family: 'DM Serif Display', serif; font-size: 28px; font-weight: 400; letter-spacing: -0.5px; }
+    .header p { font-size: 15px; color: var(--text-muted); margin-top: 6px; }
+
+    .notice { border-radius: var(--radius); padding: 12px 16px; font-size: 13px; margin-bottom: 1rem; line-height: 1.6; border: 1px solid; }
+    .notice.warning { background: #fffbea; border-color: #f0d060; color: #7a5c00; }
+    .notice.success { background: #f0faf0; border-color: #a0d080; color: #3b6d11; }
+    .notice strong { font-weight: 500; }
+    .key-row { display: flex; gap: 8px; margin-top: 10px; }
+    .key-input { flex: 1; border: 1px solid #e0c060; border-radius: 8px; padding: 8px 12px; font-size: 13px; background: white; color: var(--text); font-family: monospace; }
+    .key-btn { padding: 8px 14px; background: var(--accent); color: white; border: none; border-radius: 8px; font-size: 13px; cursor: pointer; font-family: 'DM Sans', sans-serif; }
+
+    .clinic-card { background: var(--surface); border-radius: var(--radius-lg); border: 1px solid var(--border); padding: 1.25rem; margin-bottom: 1.5rem; }
+    .section-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-muted); font-weight: 500; margin-bottom: 10px; }
+    .clinic-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .field-input { border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; font-size: 13px; background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; width: 100%; }
+    .field-input:focus { outline: none; border-color: var(--accent); }
+
+    .tabs { display: flex; gap: 4px; background: var(--surface2); padding: 4px; border-radius: var(--radius); margin-bottom: 1.5rem; }
+    .tab { flex: 1; padding: 9px; border: none; border-radius: 8px; font-size: 14px; font-family: 'DM Sans', sans-serif; cursor: pointer; background: transparent; color: var(--text-muted); transition: all 0.15s; }
+    .tab.active { background: var(--surface); color: var(--text); font-weight: 500; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+    .panel { display: none; }
+    .panel.active { display: block; }
+
+    .record-card { background: var(--surface); border-radius: var(--radius-lg); border: 1px solid var(--border); padding: 2rem; text-align: center; margin-bottom: 1rem; }
+    .mic-btn { width: 84px; height: 84px; border-radius: 50%; border: 2px solid var(--accent-light); background: var(--accent-light); cursor: pointer; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; transition: all 0.2s; }
+    .mic-btn:hover { background: #d0e4f5; }
+    .mic-btn.recording { background: var(--danger-light); border-color: #f5b0b0; animation: pulse 1.2s ease-in-out infinite; }
+    .mic-btn svg { width: 34px; height: 34px; }
+    @keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.06)} }
+
+    .timer { font-family: 'DM Serif Display', serif; font-size: 32px; color: var(--danger); display: none; margin-bottom: 4px; }
+    .rec-status { font-size: 14px; color: var(--text-muted); }
+    .rec-status.active { color: var(--danger); font-weight: 500; }
+
+    .waves { display: none; justify-content: center; align-items: flex-end; gap: 3px; height: 28px; margin: 10px 0; }
+    .wave-bar { width: 4px; background: var(--danger); border-radius: 2px; animation: wave 0.8s ease-in-out infinite; }
+    .wave-bar:nth-child(1){animation-delay:0s;height:10px}.wave-bar:nth-child(2){animation-delay:.1s;height:20px}.wave-bar:nth-child(3){animation-delay:.2s;height:14px}.wave-bar:nth-child(4){animation-delay:.3s;height:24px}.wave-bar:nth-child(5){animation-delay:.4s;height:16px}.wave-bar:nth-child(6){animation-delay:.5s;height:20px}.wave-bar:nth-child(7){animation-delay:.6s;height:10px}
+    @keyframes wave { 0%,100%{transform:scaleY(0.5)} 50%{transform:scaleY(1)} }
+
+    .transcript-box { display: none; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; font-size: 14px; line-height: 1.7; text-align: left; color: var(--text); margin-top: 1rem; min-height: 70px; }
+    .action-row { display: none; gap: 8px; margin-top: 1rem; justify-content: center; }
+
+    .btn { padding: 9px 20px; border-radius: 8px; border: 1px solid var(--border-strong); background: var(--surface); font-size: 14px; font-family: 'DM Sans', sans-serif; cursor: pointer; color: var(--text); transition: all 0.15s; }
+    .btn:hover { background: var(--surface2); }
+    .btn.primary { background: var(--accent); color: white; border-color: var(--accent); }
+    .btn.primary:hover { background: var(--accent-hover); }
+
+    .or-divider { text-align: center; font-size: 12px; color: var(--text-muted); margin: 1rem 0; display: flex; align-items: center; gap: 10px; }
+    .or-divider::before, .or-divider::after { content:''; flex:1; height:1px; background: var(--border); }
+
+    .text-input-wrap { background: var(--surface); border-radius: var(--radius-lg); border: 1px solid var(--border); padding: 1.25rem; }
+    .text-area { width: 100%; border: 1px solid var(--border); border-radius: 8px; padding: 12px; font-size: 14px; line-height: 1.7; min-height: 110px; background: var(--bg); color: var(--text); resize: vertical; font-family: 'DM Sans', sans-serif; }
+    .text-area:focus { outline: none; border-color: var(--accent); }
+    .hint { font-size: 12px; color: var(--text-muted); margin-top: 8px; line-height: 1.6; }
+    .text-action { text-align: right; margin-top: 10px; }
+
+    .loading-wrap { margin-bottom: 1.5rem; display: none; }
+    .loading-label { font-size: 13px; color: var(--text-muted); text-align: center; margin-bottom: 6px; }
+    .loading-bar { height: 3px; background: var(--border); border-radius: 2px; overflow: hidden; }
+    .loading-inner { height: 100%; background: var(--accent); border-radius: 2px; width: 0%; transition: width 0.3s; }
+
+    .recipe-card { background: var(--surface); border-radius: var(--radius-lg); border: 1px solid var(--border); overflow: hidden; }
+    .recipe-header { background: var(--accent); padding: 1.5rem; display: flex; justify-content: space-between; align-items: flex-start; }
+    .recipe-header-left h2 { font-family: 'DM Serif Display', serif; font-size: 20px; font-weight: 400; color: white; }
+    .recipe-header-left p { font-size: 13px; color: rgba(255,255,255,0.65); margin-top: 4px; }
+    .recipe-clinic { text-align: right; font-size: 12px; color: rgba(255,255,255,0.75); line-height: 1.7; }
+    .recipe-clinic strong { color: white; font-weight: 500; font-size: 13px; }
+
+    .recipe-body { padding: 1.5rem; }
+    .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-bottom: 1.25rem; }
+    .field label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-muted); font-weight: 500; display: block; margin-bottom: 4px; }
+    .field p { font-size: 15px; color: var(--text); line-height: 1.5; }
+    .field p.empty { color: var(--text-muted); font-style: italic; font-size: 14px; }
+    .section-divider { border: none; border-top: 1px solid var(--border); margin: 1.25rem 0; }
+
+    .meds-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    .meds-table th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); font-weight: 500; padding: 6px 10px; border-bottom: 1px solid var(--border); }
+    .meds-table td { padding: 10px 10px; border-bottom: 1px solid var(--border); color: var(--text); vertical-align: top; }
+    .meds-table tbody tr:last-child td { border-bottom: none; }
+    .meds-table tbody tr:hover td { background: var(--bg); }
+    .med-name { font-weight: 500; }
+
+    .obs-box { background: var(--bg); border-radius: var(--radius); padding: 14px; font-size: 14px; line-height: 1.7; color: var(--text); border-left: 3px solid var(--accent); }
+
+    .recipe-footer { border-top: 1px solid var(--border); padding: 1rem 1.5rem; background: var(--surface2); display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    .email-input { flex: 1; min-width: 200px; border: 1px solid var(--border-strong); border-radius: 8px; padding: 9px 14px; font-size: 14px; background: var(--surface); color: var(--text); font-family: 'DM Sans', sans-serif; }
+    .email-input:focus { outline: none; border-color: var(--accent); }
+
+    .empty-state { text-align: center; padding: 3.5rem; color: var(--text-muted); font-size: 15px; background: var(--surface); border-radius: var(--radius-lg); border: 1px solid var(--border); }
+    .empty-state p { margin-top: 8px; font-size: 13px; }
+
+    @media print {
+      body { background: white; padding: 0; }
+      .tabs, #panel-entrada, .recipe-footer, .notice, .clinic-card, .loading-wrap { display: none !important; }
+      #panel-receta { display: block !important; }
+    }
+    @media (max-width: 540px) {
+      .field-row, .clinic-fields { grid-template-columns: 1fr; }
+      .recipe-header { flex-direction: column; gap: 10px; }
+      .recipe-clinic { text-align: left; }
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+
+  <div class="header">
+    <div class="header-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round">
+        <path d="M9 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2h-4"/>
+        <rect x="9" y="1" width="6" height="4" rx="1"/>
+        <line x1="9" y1="12" x2="15" y2="12"/>
+        <line x1="12" y1="9" x2="12" y2="15"/>
+      </svg>
+    </div>
+    <h1>Recetario Veterinario IA</h1>
+    <p>Dictá por voz o escribí — la IA arma la receta en segundos</p>
+  </div>
+
+  <div class="notice warning" id="noticeOpenAI">
+    <strong>API key de OpenAI</strong> — necesaria para transcribir el audio (Whisper).<br>
+    Conseguila en <a href="https://platform.openai.com/api-keys" target="_blank" style="color:#0f4c81">platform.openai.com/api-keys</a>
+    <div class="key-row">
+      <input class="key-input" type="password" id="openaiKeyInput" placeholder="sk-..." />
+      <button class="key-btn" onclick="saveKey('openai')">Guardar</button>
+    </div>
+  </div>
+
+  <div class="notice warning" id="noticeAnthropic">
+    <strong>API key de Anthropic</strong> — necesaria para estructurar la receta con IA.<br>
+    Conseguila en <a href="https://console.anthropic.com/" target="_blank" style="color:#0f4c81">console.anthropic.com</a>
+    <div class="key-row">
+      <input class="key-input" type="password" id="anthropicKeyInput" placeholder="sk-ant-..." />
+      <button class="key-btn" onclick="saveKey('anthropic')">Guardar</button>
+    </div>
+  </div>
+
+  <div class="clinic-card">
+    <div class="section-label">Datos de la clínica (aparecen en la receta)</div>
+    <div class="clinic-fields">
+      <input type="text" id="clinicName" class="field-input" placeholder="Nombre de la clínica" />
+      <input type="text" id="clinicVet" class="field-input" placeholder="Nombre del veterinario" />
+      <input type="text" id="clinicPhone" class="field-input" placeholder="Teléfono / WhatsApp" />
+      <input type="text" id="clinicAddress" class="field-input" placeholder="Dirección" />
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('entrada')">Entrada</button>
+    <button class="tab" onclick="showTab('receta')">Receta generada</button>
+  </div>
+
+  <div id="panel-entrada" class="panel active">
+    <div class="record-card">
+      <button class="mic-btn" id="micBtn" onclick="toggleRecord()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#0f4c81" stroke-width="2" stroke-linecap="round" id="micIcon">
+          <rect x="9" y="2" width="6" height="12" rx="3"/>
+          <path d="M5 10a7 7 0 0 0 14 0"/>
+          <line x1="12" y1="19" x2="12" y2="22"/>
+          <line x1="8" y1="22" x2="16" y2="22"/>
+        </svg>
+      </button>
+      <div class="timer" id="timer">0:00</div>
+      <div class="waves" id="waves">
+        <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
+        <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
+        <div class="wave-bar"></div>
+      </div>
+      <div class="rec-status" id="recStatus">Tocá el micrófono para dictar la consulta</div>
+      <div class="transcript-box" id="transcriptBox"></div>
+      <div class="action-row" id="actionRow">
+        <button class="btn" onclick="clearVoice()">Limpiar</button>
+        <button class="btn primary" onclick="generateFromTranscript()">Generar receta</button>
+      </div>
+    </div>
+
+    <div class="or-divider">o escribí directamente</div>
+
+    <div class="text-input-wrap">
+      <textarea class="text-area" id="manualInput"
+        placeholder="Ej: Paciente Rocky, perro golden retriever, 5 años, 28 kg. Dueño Juan Pérez. Diagnóstico: otitis externa bilateral. Prescribir Otoclean dos veces por día durante 10 días y Amoxicilina 500mg cada 12 horas por 7 días. Próxima consulta en 15 días."></textarea>
+      <p class="hint">Escribí en forma libre — la IA extrae todos los campos automáticamente.</p>
+      <div class="text-action">
+        <button class="btn primary" onclick="generateFromText()">Generar receta</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="panel-receta" class="panel">
+    <div class="loading-wrap" id="loadingWrap">
+      <div class="loading-label" id="loadingLabel">Procesando...</div>
+      <div class="loading-bar"><div class="loading-inner" id="loadingInner"></div></div>
+    </div>
+
+    <div id="emptyState" class="empty-state">
+      <strong>Todavía no generaste ninguna receta</strong>
+      <p>Volvé a Entrada, dictá o escribí la consulta y tocá "Generar receta".</p>
+    </div>
+
+    <div id="recipeCard" class="recipe-card" style="display:none">
+      <div class="recipe-header">
+        <div class="recipe-header-left">
+          <h2>Receta veterinaria</h2>
+          <p id="recipeDate"></p>
+        </div>
+        <div class="recipe-clinic" id="clinicDisplay"></div>
+      </div>
+      <div class="recipe-body">
+        <div class="field-row">
+          <div class="field"><label>Paciente</label><p id="fPaciente" class="empty">—</p></div>
+          <div class="field"><label>Especie / Raza</label><p id="fEspecie" class="empty">—</p></div>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>Edad / Peso</label><p id="fEdad" class="empty">—</p></div>
+          <div class="field"><label>Propietario</label><p id="fDuenio" class="empty">—</p></div>
+        </div>
+        <hr class="section-divider">
+        <div class="field" style="margin-bottom:1.25rem">
+          <label>Diagnóstico</label><p id="fDiagnostico" class="empty">—</p>
+        </div>
+        <div class="section-label">Medicamentos recetados</div>
+        <table class="meds-table">
+          <thead><tr><th>Medicamento</th><th>Dosis</th><th>Frecuencia</th><th>Duración</th></tr></thead>
+          <tbody id="fMeds">
+            <tr><td colspan="4" style="color:var(--text-muted);font-style:italic;padding:12px 10px">Sin medicamentos</td></tr>
+          </tbody>
+        </table>
+        <hr class="section-divider">
+        <div class="section-label">Observaciones / Próxima consulta</div>
+        <div class="obs-box" id="fObs">—</div>
+      </div>
+      <div class="recipe-footer">
+        <input class="email-input" type="email" id="emailInput" placeholder="Email del propietario" />
+        <button class="btn primary" onclick="sendEmail()">Enviar por email</button>
+        <button class="btn" onclick="window.print()">Imprimir</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+<script>
+  let openaiKey = localStorage.getItem('vet_openai_key') || '';
+  let anthropicKey = localStorage.getItem('vet_anthropic_key') || '';
+
+  function setNoticeOk(id, label) {
+    const n = document.getElementById(id);
+    n.className = 'notice success';
+    n.innerHTML = '<strong>API key de ' + label + ' guardada.</strong>';
+  }
+  if (openaiKey) { document.getElementById('openaiKeyInput').value = openaiKey; setNoticeOk('noticeOpenAI','OpenAI (Whisper)'); }
+  if (anthropicKey) { document.getElementById('anthropicKeyInput').value = anthropicKey; setNoticeOk('noticeAnthropic','Anthropic (IA)'); }
+
+  function saveKey(type) {
+    if (type === 'openai') {
+      const v = document.getElementById('openaiKeyInput').value.trim();
+      if (!v.startsWith('sk-')) { alert('La key de OpenAI debe empezar con sk-'); return; }
+      openaiKey = v; localStorage.setItem('vet_openai_key', v); setNoticeOk('noticeOpenAI','OpenAI (Whisper)');
+    } else {
+      const v = document.getElementById('anthropicKeyInput').value.trim();
+      if (!v.startsWith('sk-ant-')) { alert('La key de Anthropic debe empezar con sk-ant-'); return; }
+      anthropicKey = v; localStorage.setItem('vet_anthropic_key', v); setNoticeOk('noticeAnthropic','Anthropic (IA)');
+    }
+  }
+
+  ['clinicName','clinicVet','clinicPhone','clinicAddress'].forEach(id => {
+    const v = localStorage.getItem('vet_' + id);
+    if (v) document.getElementById(id).value = v;
+    document.getElementById(id).addEventListener('input', () => localStorage.setItem('vet_' + id, document.getElementById(id).value));
+  });
+
+  function showTab(tab) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    document.querySelector('[onclick="showTab(\'' + tab + '\')"]').classList.add('active');
+    document.getElementById('panel-' + tab).classList.add('active');
+  }
+
+  let mediaRecorder = null, audioChunks = [], isRecording = false;
+  let timerInterval = null, seconds = 0, lastTranscript = '';
+
+  async function toggleRecord() {
+    if (!isRecording) await startRecording(); else stopRecording();
+  }
+
+  async function startRecording() {
+    if (!openaiKey) { alert('Primero guardá tu API key de OpenAI.'); return; }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      audioChunks = [];
+      const mimeType = MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm'
+                      : MediaRecorder.isTypeSupported('audio/ogg') ? 'audio/ogg' : '';
+      mediaRecorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
+      mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); };
+      mediaRecorder.start(200);
+      isRecording = true;
+      document.getElementById('micBtn').classList.add('recording');
+      document.getElementById('micIcon').setAttribute('stroke','#8b2020');
+      document.getElementById('recStatus').textContent = 'Grabando... hablá con naturalidad';
+      document.getElementById('recStatus').classList.add('active');
+      document.getElementById('timer').style.display = 'block';
+      document.getElementById('waves').style.display = 'flex';
+      seconds = 0;
+      timerInterval = setInterval(() => {
+        seconds++;
+        document.getElementById('timer').textContent = Math.floor(seconds/60) + ':' + String(seconds%60).padStart(2,'0');
+      }, 1000);
+    } catch(e) {
+      alert('No se pudo acceder al micrófono.\n' + e.message + '\n\nAsegurate de dar permiso cuando el navegador lo solicite.');
+    }
+  }
+
+  function stopRecording() {
+    if (!mediaRecorder) return;
+    mediaRecorder.stop();
+    mediaRecorder.stream.getTracks().forEach(t => t.stop());
+    isRecording = false;
+    clearInterval(timerInterval);
+    document.getElementById('micBtn').classList.remove('recording');
+    document.getElementById('micIcon').setAttribute('stroke','#0f4c81');
+    document.getElementById('recStatus').textContent = 'Transcribiendo audio con Whisper...';
+    document.getElementById('recStatus').classList.remove('active');
+    document.getElementById('timer').style.display = 'none';
+    document.getElementById('waves').style.display = 'none';
+    mediaRecorder.onstop = async () => {
+      const mime = mediaRecorder.mimeType || 'audio/webm';
+      const ext = mime.includes('ogg') ? 'ogg' : 'webm';
+      await transcribeAudio(new Blob(audioChunks, { type: mime }), ext);
+    };
+  }
+
+  async function transcribeAudio(blob, ext) {
+    const box = document.getElementById('transcriptBox');
+    box.style.display = 'block';
+    box.textContent = 'Transcribiendo...';
+    try {
+      const fd = new FormData();
+      fd.append('file', blob, 'audio.' + ext);
+      fd.append('model', 'whisper-1');
+      fd.append('language', 'es');
+      const res = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + openaiKey },
+        body: fd
+      });
+      if (!res.ok) { const e = await res.json(); throw new Error(e.error?.message || 'Error Whisper'); }
+      const data = await res.json();
+      lastTranscript = data.text || '';
+      box.textContent = lastTranscript || '(no se detectó voz)';
+      document.getElementById('recStatus').textContent = 'Transcripción lista.';
+      if (lastTranscript.trim()) document.getElementById('actionRow').style.display = 'flex';
+    } catch(e) {
+      box.textContent = 'Error: ' + e.message;
+      document.getElementById('recStatus').textContent = 'Error de transcripción.';
+    }
+  }
+
+  function clearVoice() {
+    lastTranscript = '';
+    document.getElementById('transcriptBox').style.display = 'none';
+    document.getElementById('transcriptBox').textContent = '';
+    document.getElementById('actionRow').style.display = 'none';
+    document.getElementById('recStatus').textContent = 'Tocá el micrófono para dictar la consulta';
+  }
+
+  function generateFromTranscript() { if (lastTranscript.trim()) callAI(lastTranscript); }
+  function generateFromText() {
+    const t = document.getElementById('manualInput').value.trim();
+    if (!t) { document.getElementById('manualInput').focus(); return; }
+    callAI(t);
+  }
+
+  async function callAI(rawText) {
+    if (!anthropicKey) { alert('Primero guardá tu API key de Anthropic.'); return; }
+    showTab('receta');
+    document.getElementById('emptyState').style.display = 'none';
+    document.getElementById('recipeCard').style.display = 'none';
+    const wrap = document.getElementById('loadingWrap');
+    const inner = document.getElementById('loadingInner');
+    const label = document.getElementById('loadingLabel');
+    wrap.style.display = 'block';
+    label.textContent = 'Analizando con IA...';
+    let prog = 0;
+    const pi = setInterval(() => { prog = Math.min(prog+6, 88); inner.style.width = prog+'%'; }, 200);
+
+    const prompt = `Sos un asistente veterinario. A partir del siguiente texto libre, extraé la información y respondé SOLO con un JSON válido (sin markdown, sin texto extra):
+{
+  "paciente": "nombre del animal",
+  "especie": "especie y raza",
+  "edad": "edad y/o peso",
+  "duenio": "nombre del propietario",
+  "diagnostico": "diagnóstico o motivo de consulta",
+  "medicamentos": [{"nombre":"","dosis":"","frecuencia":"","duracion":""}],
+  "observaciones": "observaciones o próxima consulta"
+}
+Si un campo no está disponible usá "". Nunca inventes datos.
+Texto: "${rawText}"`;
+
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': anthropicKey,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true'
+        },
+        body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 1000, messages: [{ role:'user', content: prompt }] })
+      });
+      clearInterval(pi); inner.style.width = '100%';
+      setTimeout(() => { wrap.style.display = 'none'; inner.style.width = '0%'; }, 400);
+      if (!res.ok) { const e = await res.json(); throw new Error(e.error?.message || 'Error API'); }
+      const data = await res.json();
+      const rx = JSON.parse((data.content?.[0]?.text||'{}').replace(/```json|```/g,'').trim());
+      fillRecipe(rx);
+    } catch(e) {
+      clearInterval(pi); wrap.style.display = 'none';
+      document.getElementById('emptyState').style.display = 'block';
+      document.getElementById('emptyState').innerHTML = '<strong>Error al generar la receta</strong><p>' + e.message + '</p>';
+    }
+  }
+
+  function fillRecipe(rx) {
+    document.getElementById('recipeDate').textContent = new Date().toLocaleDateString('es-AR',{day:'2-digit',month:'long',year:'numeric'});
+    const cn=document.getElementById('clinicName').value, cv=document.getElementById('clinicVet').value;
+    const cp=document.getElementById('clinicPhone').value, ca=document.getElementById('clinicAddress').value;
+    let ch='';
+    if(cn) ch+=`<strong>${cn}</strong><br>`;
+    if(cv) ch+=cv+'<br>'; if(cp) ch+=cp+'<br>'; if(ca) ch+=ca;
+    document.getElementById('clinicDisplay').innerHTML=ch;
+    const set=(id,val)=>{const el=document.getElementById(id);el.textContent=val||'—';el.classList.toggle('empty',!val);};
+    set('fPaciente',rx.paciente); set('fEspecie',rx.especie); set('fEdad',rx.edad);
+    set('fDuenio',rx.duenio); set('fDiagnostico',rx.diagnostico);
+    document.getElementById('fObs').textContent=rx.observaciones||'—';
+    const tbody=document.getElementById('fMeds');
+    tbody.innerHTML = rx.medicamentos?.length
+      ? rx.medicamentos.map(m=>`<tr><td><span class="med-name">${m.nombre||'—'}</span></td><td>${m.dosis||'—'}</td><td>${m.frecuencia||'—'}</td><td>${m.duracion||'—'}</td></tr>`).join('')
+      : '<tr><td colspan="4" style="color:var(--text-muted);font-style:italic;padding:12px 10px">Sin medicamentos indicados</td></tr>';
+    document.getElementById('recipeCard').style.display='block';
+    document.getElementById('emptyState').style.display='none';
+  }
+
+  function sendEmail() {
+    const email=document.getElementById('emailInput').value.trim();
+    if(!email){document.getElementById('emailInput').focus();return;}
+    const p=document.getElementById('fPaciente').textContent;
+    const d=document.getElementById('fDiagnostico').textContent;
+    const obs=document.getElementById('fObs').textContent;
+    const meds=Array.from(document.querySelectorAll('#fMeds tr')).map(r=>{
+      const c=r.querySelectorAll('td');
+      return c.length>=4?`  - ${c[0].textContent}: ${c[1].textContent}, ${c[2].textContent}, ${c[3].textContent}`:'';
+    }).filter(Boolean).join('\n');
+    const cv=document.getElementById('clinicVet').value, cn=document.getElementById('clinicName').value;
+    const body=encodeURIComponent(`Estimado/a propietario/a,\n\nLe enviamos la receta veterinaria para ${p}.\n\nDIAGNÓSTICO:\n${d}\n\nMEDICAMENTOS:\n${meds||'—'}\n\nOBSERVACIONES:\n${obs}\n\nSaludos,\n${cv||'Su veterinario'}\n${cn||''}`);
+    window.location.href=`mailto:${email}?subject=${encodeURIComponent('Receta veterinaria — '+p)}&body=${body}`;
+  }
+</script>
+</body>
+</html>
